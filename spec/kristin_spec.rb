@@ -41,18 +41,18 @@ describe Kristin do
       end
 
       it 'should convert a pdf from an URL' do
-        url = 'http://kristin-test.s3.amazonaws.com/one.pdf'
+        url = 'https://www.irs.gov/pub/irs-pdf/fw4.pdf'
         Kristin::Converter.new(url, @target_file, @fast_opts).convert
         File.exist?(@target_file).should == true
       end
 
       it 'should raise an error if URL does not exist' do
-        url = 'http://kristin-test.s3.amazonaws.com/image.png'
-        -> { Kristin::Converter.new(url, @target_file).convert }.should raise_error(IOError)
+        url = 'https://www.irs.gov/pub/irs-pdf/fw5.pdf'
+        -> { Kristin::Converter.new(url, @target_file).convert }.should raise_error(OpenURI::HTTPError)
       end
 
       it 'should raise an error if URL file is not a real pdf' do
-        url = 'http://kristin-test.s3.amazonaws.com/image.png'
+        url = 'https://www.irs.gov/pub/irs-access/f11c.zip'
         -> { Kristin::Converter.new(url, @target_file).convert }.should raise_error(IOError)
       end
     end
