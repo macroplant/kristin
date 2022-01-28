@@ -1,7 +1,7 @@
-require "kristin/version"
+require 'kristin/version'
 require 'open-uri'
-require "net/http"
-require "spoon"
+require 'net/http'
+require 'posix-spawn'
 
 module Kristin
   class Converter
@@ -12,11 +12,12 @@ module Kristin
     end
 
     def convert
-      raise IOError, "Can't find pdf2htmlex executable in PATH" if not command_available?
+      raise IOError, "Can't find pdf2htmlex executable in PATH" unless command_available?
+
       src = determine_source(@source)
-      opts = process_options.split(" ")
+      opts = process_options.split(' ')
       args = [pdf2htmlex_command, opts, src, @target].flatten
-      pid = Spoon.spawnp(*args)
+      pid, = POSIX::Spawn.popen4(*args)
       Process.waitpid(pid)
 
       ## TODO: Grab error message from pdf2htmlex and raise a better error
@@ -31,10 +32,10 @@ module Kristin
       if @target && (@target == File.absolute_path(@target))
         abs_path = File.absolute_path(@target)
         @target = File.basename(@target)
-        @options[:dest_dir] = File.absolute_path(abs_path.gsub(@target,''))
+        @options[:dest_dir] = File.absolute_path(abs_path.gsub(@target, ''))
       end
 
-      opts.push("--process-outline 0") if @options[:process_outline] == false
+      opts.push('--process-outline 0') if @options[:process_outline] == false
       opts.push("--first-page #{@options[:first_page]}") if @options[:first_page]
       opts.push("--last-page #{@options[:last_page]}") if @options[:last_page]
       opts.push("--hdpi #{@options[:hdpi]}") if @options[:hdpi]
@@ -42,11 +43,11 @@ module Kristin
       opts.push("--zoom #{@options[:zoom]}") if @options[:zoom]
       opts.push("--fit-width #{@options[:fit_width]}") if @options[:fit_width]
       opts.push("--fit-height #{@options[:fit_height]}") if @options[:fit_height]
-      opts.push("--split-pages 1") if @options[:split_pages]
+      opts.push('--split-pages 1') if @options[:split_pages]
       opts.push("--data-dir #{@options[:data_dir]}") if @options[:data_dir]
       opts.push("--dest-dir #{@options[:dest_dir]}") if @options[:dest_dir]
       opts.push("--tmp-dir #{@options[:tmp_dir]}") if @options[:tmp_dir]
-      opts.join(" ")
+      opts.join(' ')
     end
 
     def command_available?
@@ -55,19 +56,19 @@ module Kristin
 
     def pdf2htmlex_command
       cmd = nil
-      cmd = "pdf2htmlex" if which("pdf2htmlex")
-      cmd = "pdf2htmlEX" if which("pdf2htmlEX")
+      cmd = 'pdf2htmlex' if which('pdf2htmlex')
+      cmd = 'pdf2htmlEX' if which('pdf2htmlEX')
     end
 
     def which(cmd)
       exts = ENV['PATHEXT'] ? ENV['PATHEXT'].split(';') : ['']
-        ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
-          exts.each do |ext|
-            exe = File.join(path, "#{cmd}#{ext}")
-            return exe if File.executable? exe
-          end
+      ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
+        exts.each do |ext|
+          exe = File.join(path, "#{cmd}#{ext}")
+          return exe if File.executable? exe
         end
-      return nil
+      end
+      nil
     end
 
     def random_source_name
@@ -76,7 +77,7 @@ module Kristin
 
     def download_file(source)
       tmp_file = "/tmp/#{random_source_name}.pdf"
-      File.open(tmp_file, "wb") do |saved_file|
+      File.open(tmp_file, 'wb') do |saved_file|
         open(URI.encode(source), 'rb') do |read_file|
           saved_file.write(read_file.read)
         end
@@ -86,9 +87,9 @@ module Kristin
     end
 
     def determine_source(source)
-      is_file = File.exists?(source) && !File.directory?(source)
-      is_http = URI(source).scheme == "http"
-      is_https = URI(source).scheme == "https"
+      is_file = File.exist?(source) && !File.directory?(source)
+      is_http = URI(source).scheme == 'http'
+      is_https = URI(source).scheme == 'https'
       raise IOError, "Source (#{source}) is neither a file nor an URL." unless is_file || is_http || is_https
 
       is_file ? source : download_file(source)
