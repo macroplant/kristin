@@ -37,7 +37,7 @@ describe Kristin do
       end
 
       it 'should raise error if pdf is not a real pdf' do
-        -> { Kristin::Converter.new(@no_pdf, 'nonsense.html').convert }.should raise_error(IOError)
+        -> { Kristin::Converter.new(@no_pdf, 'nonsense.html').convert }.should raise_error(Kristin::Pdf2HtmlExError)
       end
 
       it 'should convert a pdf from an URL' do
@@ -53,7 +53,7 @@ describe Kristin do
 
       it 'should raise an error if URL file is not a real pdf' do
         url = 'https://www.irs.gov/pub/irs-access/f11c.zip'
-        -> { Kristin::Converter.new(url, @target_file).convert }.should raise_error(IOError)
+        -> { Kristin::Converter.new(url, @target_file).convert }.should raise_error(Kristin::Pdf2HtmlExError)
       end
     end
 

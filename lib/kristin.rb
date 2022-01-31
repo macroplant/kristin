@@ -4,6 +4,22 @@ require 'net/http'
 require 'posix-spawn'
 
 module Kristin
+  class Pdf2HtmlExError < StandardError
+    def initialize(msg, out_str, err_str)
+      @out_str = out_str
+      @err_str = err_str
+      super(msg)
+    end
+
+    def pdf2htmlex_out
+      @out_str
+    end
+
+    def pdf2htmlex_err
+      @err_str
+    end
+  end
+
   class Converter
     def initialize(source, target, options = {})
       @options = options
@@ -17,11 +33,17 @@ module Kristin
       src = determine_source(@source)
       opts = process_options.split(' ')
       args = [pdf2htmlex_command, opts, src, @target].flatten
-      pid, = POSIX::Spawn.popen4(*args)
-      Process.waitpid(pid)
-
-      ## TODO: Grab error message from pdf2htmlex and raise a better error
-      raise IOError, "Could not convert #{src}" if $?.exitstatus != 0
+      begin
+        pid, stdin, stdout, stderr = POSIX::Spawn.popen4(*args)
+        stdin.close
+        out = stdout.read
+        err = stderr.read
+        Process.waitpid(pid)
+        ## TODO: Grab error message from pdf2htmlex and raise a better error
+        raise Kristin::Pdf2HtmlExError.new "Could not convert #{src}", out, err if $?.exitstatus != 0
+      ensure
+        [stdin, stdout, stderr].each { |io| io.close unless io.closed? }
+      end
     end
 
     private
