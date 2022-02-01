@@ -5,18 +5,12 @@ require 'posix-spawn'
 
 module Kristin
   class Pdf2HtmlExError < StandardError
+    attr_accessor :pdf2htmlex_out, :pdf2htmlex_err
+
     def initialize(msg, out_str, err_str)
-      @out_str = out_str
-      @err_str = err_str
+      @pdf2htmlex_out = out_str
+      @pdf2htmlex_err = err_str
       super(msg)
-    end
-
-    def pdf2htmlex_out
-      @out_str
-    end
-
-    def pdf2htmlex_err
-      @err_str
     end
   end
 
@@ -39,7 +33,6 @@ module Kristin
         out = stdout.read
         err = stderr.read
         Process.waitpid(pid)
-        ## TODO: Grab error message from pdf2htmlex and raise a better error
         raise Kristin::Pdf2HtmlExError.new "Could not convert #{src}", out, err if $?.exitstatus != 0
       ensure
         [stdin, stdout, stderr].each { |io| io.close unless io.closed? }
